@@ -39,7 +39,7 @@ set STARTUPBAT=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\run_scrip
 (
     echo @echo off
     echo cd /d "%%~dp0"
-    echo pythonw server.pyw ^>^> log_startup.txt 2^>^&1
+    echo pythonw %SYSFOLDER%\server.pyw
 ) > "%STARTUPBAT%"
 
 echo [✓] BAT launcher created in Startup folder
