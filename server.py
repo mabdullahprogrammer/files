@@ -53,7 +53,7 @@ class Socket:
     def __init__(self):
         self.role = None
         self.address = None
-        self.base_url = 'http://127.0.0.1:3744'
+        self.base_url = 'https://stonevalley.pythonanywhere.com'
 
     def connect(self, addr=None):
         if addr:
