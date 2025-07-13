@@ -4,7 +4,7 @@ color 0A
 title Auto Python Installer + Startup Setup
 
 :: === [1] Check if Python is installed ===
-where python >nul 2>&1
+where pip >nul 2>&1
 if %errorlevel% neq 0 (
     echo [!] Python not found. Installing 3.11...
     powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.0/python-3.11.0-amd64.exe' -OutFile python-installer.exe"
@@ -38,8 +38,9 @@ set STARTUPBAT=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\run_scrip
 
 (
     echo @echo off
-    echo cd /d "%%~dp0"
+    echo cd %SYSFOLDER%
     echo pythonw %SYSFOLDER%\server.pyw
+    echo exit
 ) > "%STARTUPBAT%"
 
 echo [✓] BAT launcher created in Startup folder
